@@ -1,0 +1,36 @@
+import scala.collection.mutable.ListBuffer
+import org.apache.spark.{SparkConf, SparkContext}
+import org.json.JSONObject
+import scala.collection.mutable.ListBuffer
+
+/**
+  * Created by susan on 2018/7/24.
+  * * 1.读取文件textFile
+  * 2.过滤"status":0}的数据 filter
+  * 3.将 "data":Array[5]转变成多行  flatMap   抚平
+  * 4.获取 "school":"华南师范大学",  "plan":"2",
+  * 4.获取 "school":"华南师范大学",  "plan":"2",  reduce 缩减
+  * 5.学校和招生人数 排序， 按照招生人数排序 。sort
+  */
+object xiaxiao2 {
+  def main(args: Array[String]) {
+    //sparkcontext的配置，运行在本地，名称为cala
+    val conf = new SparkConf().setAppName("cala").setMaster("local").set("spark.testting.memory","2147480000")
+    val sc = new SparkContext(conf)//Spaark运行环境  本地电脑，集群
+    //使用spark的读取本地文件br
+    sc.textFile("D:\\实训\\全国计划招生表--贵州.txt")
+      .filter(line=>line.endsWith("status\":1}"))//过滤掉结尾不是status":1}的行
+      .flatMap(line=>{//line str====>List line  抚平
+       val json = new JSONObject(line)
+       val jsonlist =json.getJSONArray("data")
+       val list = ListBuffer[JSONObject]()  ///????
+       for(i<-0 to jsonlist.length()-1){
+         list.append(jsonlist.getJSONObject(i))
+       }
+      list
+    })
+      .map(line=>(line.getString("school"),line.getString("plan").toInt))
+      .reduceByKey(_+_)//缩减，相同的学校招生人数相加
+      .foreach(line=>println(line))
+  }
+}
